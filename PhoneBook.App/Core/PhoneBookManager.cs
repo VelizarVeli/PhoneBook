@@ -4,18 +4,21 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using PhoneBook.App.Core.Contracts;
-using PhoneBook.App.Models;
+using PhoneBook.Data;
+using PhoneBook.Models;
 
 namespace PhoneBook.App.Core
 {
     public class PhoneBookManager : IManager
     {
-        private readonly IDictionary<string, User> phonesDictionary;
+        private readonly ICollection<PhoneUser> phoneBook;
         private PhoneNumberCheck check;
+        private PhoneBookDbContext dbContext;
 
         public PhoneBookManager()
         {
-            this.phonesDictionary = new Dictionary<string, User>();
+            this.phoneBook = new List<PhoneUser>();
+            this.dbContext = new PhoneBookDbContext();
             this.Load();
         }
 
@@ -32,11 +35,15 @@ namespace PhoneBook.App.Core
 
                 if (checkPhoneNormalBg.Check(phoneNumber))
                 {
-                    if (!phonesDictionary.ContainsKey(name))
+                    var checkUser = dbContext.Users.Any(a => a.Name == name);
+                    if (!checkUser)
                     {
-                        phonesDictionary.Add(name, new User { Name = name, PhoneNumber = phoneNumber });
+                        var currentUser = new PhoneUser { Name = name, PhoneNumber = phoneNumber };
+                        phoneBook.Add(currentUser);
                     }
                 }
+                dbContext.Users.UpdateRange(phoneBook);
+                dbContext.SaveChanges();
             }
         }
 
@@ -48,9 +55,12 @@ namespace PhoneBook.App.Core
 
             if (checkPhoneNormalBg.Check(phoneNumber))
             {
-                if (!phonesDictionary.ContainsKey(name))
+                var checkUser = dbContext.Users.Any(a => a.Name == name);
+                if (!checkUser)
                 {
-                    phonesDictionary.Add(name, new User() { Name = name, PhoneNumber = phoneNumber });
+                    var currentUser = new PhoneUser { Name = name, PhoneNumber = phoneNumber };
+                    dbContext.Users.Update(currentUser);
+                    dbContext.SaveChanges();
                 }
                 else
                 {
@@ -65,9 +75,11 @@ namespace PhoneBook.App.Core
         public string Delete(IList<string> arguments)
         {
             var name = arguments[1];
-            if (phonesDictionary.ContainsKey(name))
+            var currentUser = dbContext.Users.FirstOrDefault(a => a.Name == name);
+            if (currentUser != null)
             {
-                phonesDictionary.Remove(name);
+                dbContext.Users.Remove(currentUser);
+                dbContext.SaveChanges();
             }
             else
             {
@@ -79,10 +91,10 @@ namespace PhoneBook.App.Core
         public string ShowPhoneNumber(IList<string> arguments)
         {
             string name = arguments[1];
-            if (phonesDictionary.ContainsKey(name))
+            var currentUser = dbContext.Users.FirstOrDefault(a => a.Name == name);
+            if (currentUser != null)
             {
-                var phoneNumber = phonesDictionary.FirstOrDefault(x => x.Key == name).Value;
-                return $"{name}'s phone number is {phoneNumber.PhoneNumber}";
+                return $"{name}'s phone number is {currentUser.PhoneNumber}";
             }
             return $"{name} doesn't exist in contacts!";
         }
@@ -90,9 +102,10 @@ namespace PhoneBook.App.Core
         public string PrintAll(IList<string> arguments)
         {
             var sb = new StringBuilder();
-            foreach (var name in phonesDictionary.OrderBy(n => n.Key))
+            var allUsers = dbContext.Users.OrderBy(n => n.Name).ToList();
+            foreach (var user in allUsers)
             {
-                sb.AppendLine($"{name.Key} {name.Value.PhoneNumber}");
+                sb.AppendLine($"{user.Name} {user.PhoneNumber}");
             }
 
             return sb.ToString().Trim();
@@ -102,9 +115,18 @@ namespace PhoneBook.App.Core
         {
             string name = arguments[1];
             string callingToNumber = arguments[2];
-            if (phonesDictionary.ContainsKey(name))
+
+            var currentUser = dbContext.Users.FirstOrDefault(a => a.Name == name);
+            if (currentUser != null)
             {
-                phonesDictionary[name].OutgoingCalls.Add(callingToNumber);
+                var outgoingCall = new OutgoingCall
+                {
+                    PhoneUserId = currentUser.Id,
+                    OutgoingNumber = callingToNumber
+                };
+                currentUser.OutgoingCalls.Add(outgoingCall);
+                dbContext.OutgoingCalls.Add(outgoingCall);
+                dbContext.SaveChanges();
                 return $"Calling {callingToNumber} ...";
             }
 
@@ -115,18 +137,15 @@ namespace PhoneBook.App.Core
         {
             var sb = new StringBuilder();
 
-            var counter = 1;
+            var orderedByOutgoingCount = dbContext
+                .Users
+                .OrderByDescending(c => c.OutgoingCalls.Count)
+                .ThenBy(n => n.Name)
+                .Take(5);
 
-            var orderedByOutgoingCount = phonesDictionary.OrderByDescending(c => c.Value.OutgoingCalls.Count).ThenBy(n => n.Key);
-            foreach (var name in orderedByOutgoingCount)
+            foreach (var user in orderedByOutgoingCount)
             {
-                sb.AppendLine($"{name.Key} with phone number {name.Value.PhoneNumber} has {name.Value.OutgoingCalls.Count} outgoing calls.");
-                if (counter == 5)
-                {
-                    break;
-                }
-
-                counter++;
+                sb.AppendLine($"{user.Name} with phone number {user.PhoneNumber} has {user.OutgoingCalls.Count} outgoing calls.");
             }
             return sb.ToString().Trim();
         }

@@ -1,7 +1,6 @@
-﻿using System.Linq;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
-namespace PhoneBook.App
+namespace PhoneBook.App.Core
 {
     public class PhoneNumberCheck
     {
