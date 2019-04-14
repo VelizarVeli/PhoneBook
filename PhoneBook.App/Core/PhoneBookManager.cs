@@ -21,8 +21,7 @@ namespace PhoneBook.App.Core
 
         public void Load()
         {
-            Console.Write("Write the path to the file and the file name with extension:");
-            string path = Console.ReadLine();
+            string path = @"../../../file.txt";
             var phonebookFIle = File.ReadAllText(path).Split(new[] { Environment.NewLine },
                 StringSplitOptions.None);
             var checkPhoneNormalBg = new PhoneNumberCheck();
