@@ -10,7 +10,7 @@ namespace PhoneBook.App.Core
 
             string checkZeros = number.Substring(0, 2);
 
-            if (checkZeros.ToString() == "00")
+            if (checkZeros == "00")
             {
                 pattern = @"^(00359)(87|88|89)[2-9][0-9]{6}$";
             }

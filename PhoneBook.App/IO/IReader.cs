@@ -2,6 +2,6 @@
 {
     public interface IReader
     {
-        string readData();
+        string ReadData();
     }
 }

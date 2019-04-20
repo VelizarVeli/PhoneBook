@@ -12,13 +12,14 @@ namespace PhoneBook.App.Core
     public class PhoneBookManager : IManager
     {
         private readonly ICollection<PhoneUser> phoneBook;
-        private PhoneNumberCheck check;
-        private PhoneBookDbContext dbContext;
+        private readonly PhoneNumberCheck checkPhoneNormalBg;
+        private readonly PhoneBookDbContext dbContext;
 
         public PhoneBookManager()
         {
             this.phoneBook = new List<PhoneUser>();
             this.dbContext = new PhoneBookDbContext();
+            this.checkPhoneNormalBg = new PhoneNumberCheck();
             this.Load();
         }
 
@@ -27,7 +28,6 @@ namespace PhoneBook.App.Core
             string path = @"../../../file.txt";
             var phonebookFIle = File.ReadAllText(path).Split(new[] { Environment.NewLine },
                 StringSplitOptions.None);
-            var checkPhoneNormalBg = new PhoneNumberCheck();
             foreach (var phone in phonebookFIle)
             {
                 var name = phone.Split()[0];
@@ -51,7 +51,6 @@ namespace PhoneBook.App.Core
         {
             string name = arguments[1];
             string phoneNumber = arguments[2];
-            var checkPhoneNormalBg = new PhoneNumberCheck();
 
             if (checkPhoneNormalBg.Check(phoneNumber))
             {
@@ -130,7 +129,7 @@ namespace PhoneBook.App.Core
                 return $"Calling {callingToNumber} ...";
             }
 
-            return $"There is no such name!";
+            return "There is no such name!";
         }
 
         public string ShowOutgoingCalls(IList<string> arguments)

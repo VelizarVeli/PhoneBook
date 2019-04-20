@@ -23,7 +23,7 @@ namespace PhoneBook.App.Core
         public void Run()
         {
             string inputLine;
-            while ((inputLine = this.reader.readData()) != "End")
+            while ((inputLine = this.reader.ReadData()) != "End")
             {
                 IList<string> inputParameters = inputLine.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).ToList();
                 try
